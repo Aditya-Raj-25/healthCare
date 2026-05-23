@@ -11,15 +11,15 @@ The architecture is designed for **ultra-low latency**, **context-aware memory**
 ### System Architecture Diagram
 ```mermaid
 graph TD
-    User([👤 User Microphone]) -->|Raw Audio Stream| FE[💻 Streamlit / Vanilla JS Frontend]
-    FE -->|Persistent WebSocket| BE[⚙️ FastAPI Backend Event Loop]
-    BE <-->|Pub/Sub Event Bus| Redis[(Redis Message Broker)]
-    BE -->|Audio Bytes| DG[🎙️ Deepgram STT]
-    DG -->|Partial & Final Transcripts| BE
-    BE <-->|Context & Transcripts| Groq[🧠 Groq Llama 3 (8b-instant)]
-    Groq -->|Tool Calling JSON| BE
-    BE <-->|Auto-Resolution Queries| DB[(Database / State Memory)]
-    BE -->|UI State Events & Text| FE
+    User(["👤 User Microphone"]) -->|"Raw Audio Stream"| FE["💻 Streamlit / Vanilla JS Frontend"]
+    FE -->|"Persistent WebSocket"| BE["⚙️ FastAPI Backend Event Loop"]
+    BE <-->|"Pub/Sub Event Bus"| Redis[("Redis Message Broker")]
+    BE -->|"Audio Bytes"| DG["🎙️ Deepgram STT"]
+    DG -->|"Partial & Final Transcripts"| BE
+    BE <-->|"Context & Transcripts"| Groq["🧠 Groq Llama 3 (8b-instant)"]
+    Groq -->|"Tool Calling JSON"| BE
+    BE <-->|"Auto-Resolution Queries"| DB[("Database / State Memory")]
+    BE -->|"UI State Events & Text"| FE
 ```
 
 To achieve human-like conversational latency (sub-500ms), the system bypasses traditional HTTP request-response cycles.
