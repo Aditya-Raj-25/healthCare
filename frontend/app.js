@@ -18,6 +18,40 @@ let isMicPaused = false;
 let chunkCount = 0;
 let currentAppointmentId = null;
 
+// Voice Management
+let availableVoices = [];
+window.speechSynthesis.onvoiceschanged = () => {
+    availableVoices = window.speechSynthesis.getVoices();
+};
+
+function getBestFemaleVoice(langCode) {
+    if (availableVoices.length === 0) {
+        availableVoices = window.speechSynthesis.getVoices();
+    }
+    
+    const baseLang = langCode.split('-')[0];
+    let langVoices = availableVoices.filter(v => v.lang.startsWith(baseLang));
+    if (langVoices.length === 0) langVoices = availableVoices;
+    
+    // List of known high-quality female voices across Mac, Chrome, and Windows
+    const preferredNames = [
+        "Google US English", "Samantha", "Victoria", "Karen", "Tessa", 
+        "Microsoft Zira", "Microsoft Aria", "Google UK English Female",
+        "Lekha", "Google हिन्दी", "Google தமிழ்"
+    ];
+    
+    for (const name of preferredNames) {
+        const found = langVoices.find(v => v.name.includes(name));
+        if (found) return found;
+    }
+    
+    // Fallback to any voice with female in name
+    const anyFemale = langVoices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman'));
+    if (anyFemale) return anyFemale;
+    
+    return langVoices[0];
+}
+
 // Generate a random session ID
 const sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
 console.log('[VoiceAI] Session ID:', sessionId);
@@ -113,6 +147,22 @@ function handleServerMessage(data) {
         bubble.textContent = text;
         chatHistory.appendChild(bubble);
         chatHistory.scrollTop = chatHistory.scrollHeight;
+        
+        // Speak the response using Native Web Speech API
+        window.speechSynthesis.cancel(); // Stop any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        const lang = languageSelect.value;
+        utterance.lang = lang; // Natively match English, Hindi, or Tamil
+        
+        const bestVoice = getBestFemaleVoice(lang);
+        if (bestVoice) {
+            utterance.voice = bestVoice;
+        }
+        
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1; // Slightly higher pitch for a more natural female tone
+        window.speechSynthesis.speak(utterance);
         
         // Clear partial
         partialTranscript.textContent = "Waiting for speech...";

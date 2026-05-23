@@ -26,6 +26,7 @@ Build a production-style conversational healthcare assistant capable of:
 ### 🎙️ Ultra-Low Latency Voice Streaming
 * **WebSocket Transport:** Bypasses traditional HTTP request-response overhead.
 * **Deepgram STT (Nova-2):** Real-time, streaming Speech-to-Text with aggressive 2.5-second endpointing tuned perfectly for human conversational pauses.
+* **Native Text-to-Speech (TTS):** Leverages the browser's native Web Speech API to instantly synthesize AI responses. It features a smart selection algorithm that dynamically scans the user's OS to route audio through the highest-quality, natural-sounding female voices available.
 * **Microphone Management:** Smart UI auto-pausing during AI responses to prevent audio loopback and echoes.
 
 ### 🌐 Multilingual Support
