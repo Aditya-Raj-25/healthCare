@@ -50,7 +50,7 @@ class DeepgramStreamingClient:
                 language=self.language,
                 smart_format=True,
                 interim_results=True,
-                endpointing=300 # Wait 300ms of silence before marking final
+                endpointing=2500 # Wait 2.5 seconds of silence before marking final
             )
             
             # Use run_in_executor if the start method blocks, but asyncwebsocket should be async

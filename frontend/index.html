@@ -7,31 +7,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-color: #000000;
+            --surface-color: #111111;
+            --primary-color: #0d9488;  /* Healthcare Teal */
+            --secondary-color: #0ea5e9; /* Medical Blue */
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --accent-color: #3b82f6;
-            --accent-hover: #2563eb;
-            --success-color: #10b981;
             --danger-color: #ef4444;
+            --success-color: #10b981;
             --warning-color: #f59e0b;
+            --glass-bg: rgba(0, 0, 0, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle at top right, #1e3a8a 0%, transparent 40%),
-                              radial-gradient(circle at bottom left, #064e3b 0%, transparent 40%);
             color: var(--text-primary);
-            min-height: 100vh;
             margin: 0;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
-            box-sizing: border-box;
         }
 
         .container {
@@ -39,6 +36,7 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(20, 184, 166, 0.3); /* Healthcare glow on top edge */
             border-radius: 24px;
             padding: 2.5rem;
             width: 100%;
@@ -236,13 +234,13 @@
                 <div id="partialTranscript">Waiting for speech...</div>
             </div>
             
-            <div class="box" id="appointmentBox" style="display: none; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05);">
+            <div class="box" id="appointmentBox" style="border-color: rgba(148, 163, 184, 0.3); background: rgba(148, 163, 184, 0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h3 style="color: var(--success-color); margin: 0;">Appointment Dashboard</h3>
-                    <span id="appointmentBadge" style="font-size: 0.75rem; background: var(--success-color); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">BOOKED</span>
+                    <h3 style="color: var(--text-primary); margin: 0;">Appointment Dashboard</h3>
+                    <span id="appointmentBadge" style="font-size: 0.75rem; background: var(--glass-border); color: var(--text-secondary); padding: 2px 8px; border-radius: 12px; font-weight: 600;">NO APPOINTMENT</span>
                 </div>
-                <div id="appointmentDetails" style="font-size: 0.95rem; line-height: 1.6; color: #e2e8f0; margin-bottom: 1rem;">
-                    <!-- Details will be injected here -->
+                <div id="appointmentDetails" style="font-size: 0.95rem; line-height: 1.6; color: #94a3b8; margin-bottom: 1rem; text-align: center; font-style: italic;">
+                    Start speaking to the AI to book a slot...
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
                     <button id="rescheduleBtn" style="background-color: var(--warning-color); padding: 0.5rem 1rem; font-size: 0.875rem; flex: 1; justify-content: center;">Reschedule</button>
@@ -250,18 +248,14 @@
                 </div>
             </div>
             
-            <div class="box">
-                <h3>Final Transcript</h3>
-                <div id="finalTranscript"></div>
+            <div id="chatHistory" class="chat-container" style="display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto; padding: 1rem; background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid var(--glass-border); margin-top: 1rem;">
+                <div style="align-self: flex-start; background: rgba(255, 255, 255, 0.1); color: #e2e8f0; border-bottom-left-radius: 4px; max-width: 80%; padding: 0.8rem 1rem; border-radius: 16px; font-size: 1rem; line-height: 1.5;">
+                    Hello! I am your Healthcare Voice AI Assistant. I can help you book, reschedule, or cancel your medical appointments.
+                </div>
             </div>
-            
-            <div class="box" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05);">
-                <h3 style="color: var(--accent-color);">AI Response</h3>
-                <div id="aiResponse" style="font-size: 1rem; line-height: 1.5; color: #e2e8f0; min-height: 1.2rem;">Waiting for AI...</div>
-            </div>
-        </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Cache busting -->
+    <script src="app.js?v=2"></script>
 </body>
 </html>

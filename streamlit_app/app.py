@@ -4,7 +4,7 @@ st.set_page_config(layout="wide", page_title="Voice AI Dashboard")
 
 st.markdown("""
 <div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="background: linear-gradient(to right, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+    <h1 style="background: linear-gradient(to right, #14b8a6, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
         Healthcare Voice AI Dashboard
     </h1>
     <p style="color: #94a3b8; font-size: 1.1rem;">
@@ -13,14 +13,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+import time
 import streamlit.components.v1 as components
 
 # Embed the vanilla JS frontend via components.html to ensure microphone permissions are passed through Streamlit's sandbox.
-components.html("""
-<iframe src="http://localhost:8000/static/index.html" 
+# Added cache-busting query parameter to prevent Streamlit/browser from caching old HTML.
+components.html(f"""
+<iframe src="http://localhost:8000/static/index.html?t={int(time.time())}" 
         allow="microphone; autoplay" 
         width="100%" 
         height="900px" 
-        style="border: none; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); background-color: #0f172a;">
+        style="border: none; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); background-color: #000000;">
 </iframe>
 """, height=900)

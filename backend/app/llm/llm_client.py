@@ -29,8 +29,9 @@ SYSTEM_INSTRUCTION = (
     "3. Their phone number "
     "4. Their symptoms or reason for the visit "
     "Do not ask for everything all at once. Ask for these details naturally during the conversation. "
-    "Once you have collected the required details, AND the user agrees to a specific date and time, trigger the `book_appointment` tool. "
-    "If the user wants to cancel or reschedule, trigger the respective tools. "
+    "Once you have collected the required details, AND the user agrees to a specific date and time, you MUST call the `book_appointment` function using the native tool calling API. "
+    "DO NOT output raw JSON or <function> tags in your text response. Speak only in natural, conversational words. "
+    "If the user wants to cancel or reschedule, trigger the respective tools via the API. "
     "Do not provide definitive medical diagnoses. Instead, focus on gathering this information to schedule them with a doctor. "
     "CRITICAL: You must respond in the exact SAME language the user speaks to you (English, Hindi, or Tamil). "
     "If they speak Hindi, reply in Hindi. If they speak Tamil, reply in Tamil."
@@ -64,11 +65,11 @@ tools = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "appointment_id": {"type": "string", "description": "The unique appointment ID to reschedule"},
+                    "appointment_id": {"type": "string", "description": "The unique appointment ID to reschedule (optional)"},
                     "new_date": {"type": "string", "description": "YYYY-MM-DD"},
                     "new_time": {"type": "string", "description": "HH:MM"}
                 },
-                "required": ["appointment_id", "new_date", "new_time"]
+                "required": ["new_date", "new_time"]
             }
         }
     },
@@ -76,17 +77,19 @@ tools = [
         "type": "function",
         "function": {
             "name": "cancel_appointment",
-            "description": "Cancels an existing appointment.",
+            "description": "Cancels an existing appointment. Automatically targets the latest appointment if ID is omitted.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "appointment_id": {"type": "string", "description": "The unique appointment ID to cancel"}
+                    "appointment_id": {"type": "string", "description": "The unique appointment ID to cancel (optional)"}
                 },
-                "required": ["appointment_id"]
+                "required": []
             }
         }
     }
 ]
+
+import re
 
 async def process_transcript_with_llm(session_id: str, transcript: str, language: str = "en-US"):
     """
@@ -131,38 +134,53 @@ async def process_transcript_with_llm(session_id: str, transcript: str, language
         
         response_message = response.choices[0].message
         
-        if response_message.tool_calls:
-            # Append the tool call to history
+        # Fallback regex parsing if Llama 3 hallucinates the <function> tag in raw text
+        ai_raw_text = response_message.content or ""
+        function_match = re.search(r'<function=([^>]+)>(.*?)</function>', ai_raw_text, re.DOTALL)
+        
+        if response_message.tool_calls or function_match:
+            # We have a tool call (either native or hallucinated)
             history.append(response_message)
             
-            for tool_call in response_message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                
-                logger.info("LLM called tool", function_name=function_name, arguments=arguments)
-                
-                tool_output = "Error: Tool execution failed."
-                
-                try:
-                    if function_name == "book_appointment":
-                        tool_output = await book_appointment(session_id=session_id, **arguments)
-                    elif function_name == "reschedule_appointment":
-                        tool_output = await reschedule_appointment(session_id=session_id, **arguments)
-                    elif function_name == "cancel_appointment":
-                        tool_output = await cancel_appointment(session_id=session_id, **arguments)
-                except Exception as e:
-                    logger.error("Tool execution failed", error=str(e))
-                    tool_output = f"Error: {str(e)}"
-                
-                # Append tool result to history
-                history.append({
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": tool_output
-                })
+            tool_name = None
+            arguments = {}
+            tool_id = "call_" + str(uuid.uuid4().hex[:8]) if function_match else None
             
-            # Second call to get the final response based on tool execution
+            if response_message.tool_calls:
+                tool_call = response_message.tool_calls[0]
+                tool_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
+                tool_id = tool_call.id
+            elif function_match:
+                tool_name = function_match.group(1)
+                try:
+                    arguments = json.loads(function_match.group(2))
+                except:
+                    arguments = {}
+                    
+            logger.info("LLM called tool", function_name=tool_name, arguments=arguments)
+            tool_output = "Error: Tool execution failed."
+            
+            try:
+                if tool_name == "book_appointment":
+                    tool_output = await book_appointment(session_id=session_id, **arguments)
+                elif tool_name == "reschedule_appointment":
+                    tool_output = await reschedule_appointment(session_id=session_id, **arguments)
+                elif tool_name == "cancel_appointment":
+                    tool_output = await cancel_appointment(session_id=session_id, **arguments)
+            except Exception as e:
+                logger.error("Tool execution failed", error=str(e))
+                tool_output = f"Error: {str(e)}"
+            
+            # Append tool result to history
+            history.append({
+                "tool_call_id": tool_id,
+                "role": "tool",
+                "name": tool_name,
+                "content": tool_output
+            })
+            
+            # Second call to get the final conversational response
             second_response = await client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=history,
@@ -170,6 +188,8 @@ async def process_transcript_with_llm(session_id: str, transcript: str, language
                 temperature=0.7
             )
             ai_text = second_response.choices[0].message.content
+            # Clean any trailing XML/function tags from the final text just in case
+            ai_text = re.sub(r'<[^>]+>.*?</[^>]+>', '', ai_text, flags=re.DOTALL).strip()
             history.append({"role": "assistant", "content": ai_text})
         else:
             ai_text = response_message.content

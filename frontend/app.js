@@ -6,6 +6,7 @@ const micStatus = document.getElementById('micStatus');
 const recordBtn = document.getElementById('recordBtn');
 const languageSelect = document.getElementById('languageSelect');
 const partialTranscript = document.getElementById('partialTranscript');
+const chatHistory = document.getElementById('chatHistory');
 const finalTranscript = document.getElementById('finalTranscript');
 
 // State
@@ -86,20 +87,37 @@ function disconnectWebSocket() {
 
 function handleServerMessage(data) {
     if (data.event_type === "partial_transcript") {
-        partialTranscript.textContent = data.message;
+        const text = data.message;
+        console.log('[VoiceAI] Partial Transcript:', text);
+        partialTranscript.textContent = text;
     } else if (data.event_type === "final_transcript") {
-        partialTranscript.textContent = "Waiting for speech...";
-        const p = document.createElement('p');
-        p.textContent = data.message;
-        finalTranscript.appendChild(p);
-        finalTranscript.scrollTop = finalTranscript.scrollHeight;
-    } else if (data.event_type === "ai_response") {
-        const aiResponseBox = document.getElementById('aiResponse');
-        if (aiResponseBox) {
-            aiResponseBox.textContent = data.message;
-        }
+        const text = data.message;
+        console.log('[VoiceAI] Final Transcript:', text);
         
-        // Auto-pause the mic so STT doesn't pick up the user reading the AI response out loud
+        // Append User Bubble
+        const bubble = document.createElement('div');
+        bubble.style.cssText = "align-self: flex-end; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-bottom-right-radius: 4px; max-width: 80%; padding: 0.8rem 1rem; border-radius: 16px; font-size: 1rem; line-height: 1.5;";
+        bubble.textContent = text;
+        chatHistory.appendChild(bubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        
+        // Clear partial
+        partialTranscript.textContent = "Waiting for AI...";
+    } else if (data.event_type === "ai_response") {
+        const text = data.message;
+        console.log('[VoiceAI] AI Response:', text);
+        
+        // Append AI Bubble
+        const bubble = document.createElement('div');
+        bubble.style.cssText = "align-self: flex-start; background: rgba(255, 255, 255, 0.1); color: #e2e8f0; border-bottom-left-radius: 4px; max-width: 80%; padding: 0.8rem 1rem; border-radius: 16px; font-size: 1rem; line-height: 1.5;";
+        bubble.textContent = text;
+        chatHistory.appendChild(bubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        
+        // Clear partial
+        partialTranscript.textContent = "Waiting for speech...";
+
+        // Handle Mic Pause UI indicator
         if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.pause();
             isMicPaused = true;
@@ -144,13 +162,21 @@ function renderAppointmentBox(appt) {
         box.style.background = 'rgba(16, 185, 129, 0.05)';
     }
     
-    // Update Details
-    details.innerHTML = `
-        <strong>Patient:</strong> ${appt.patient_name} <br>
-        <strong>Date:</strong> ${appt.date} <br>
-        <strong>Time:</strong> ${appt.time} <br>
-        <strong>ID:</strong> <span style="color: var(--text-secondary); font-family: monospace;">${appt.id}</span>
-    `;
+    // Update Details based on status
+    if (appt.status === 'canceled') {
+        details.innerHTML = `
+            <strong>Patient:</strong> ${appt.patient_name || 'N/A'} <br>
+            <strong>Phone:</strong> ${appt.patient_phone || 'N/A'} <br>
+            <strong>ID:</strong> <span style="color: var(--text-secondary); font-family: monospace;">${appt.id}</span>
+        `;
+    } else {
+        details.innerHTML = `
+            <strong>Patient:</strong> ${appt.patient_name || 'N/A'} <br>
+            <strong>Date:</strong> ${appt.date || 'N/A'} <br>
+            <strong>Time:</strong> ${appt.time || 'N/A'} <br>
+            <strong>ID:</strong> <span style="color: var(--text-secondary); font-family: monospace;">${appt.id}</span>
+        `;
+    }
 }
 
 // Button listeners for the voice agent

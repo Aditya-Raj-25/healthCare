@@ -53,10 +53,16 @@ async def book_appointment(
     await _notify_frontend(session_id, appt)
     return f"Successfully booked appointment for {patient_name} on {date} at {time}. Appointment ID: {appt_id}"
 
-async def cancel_appointment(session_id: str, appointment_id: str) -> str:
+async def cancel_appointment(session_id: str, appointment_id: str = None) -> str:
     """
     Cancels an existing appointment.
     """
+    if not appointment_id:
+        user_appts = [a for a in db_appointments.values() if a.session_id == session_id and a.status != "canceled"]
+        if not user_appts:
+            return "Error: No active appointments found to cancel."
+        appointment_id = user_appts[-1].id
+
     if appointment_id not in db_appointments:
         return f"Error: Appointment {appointment_id} not found."
     
@@ -67,10 +73,16 @@ async def cancel_appointment(session_id: str, appointment_id: str) -> str:
     await _notify_frontend(session_id, appt)
     return f"Successfully canceled appointment {appointment_id}."
 
-async def reschedule_appointment(session_id: str, appointment_id: str, new_date: str, new_time: str) -> str:
+async def reschedule_appointment(session_id: str, new_date: str, new_time: str, appointment_id: str = None) -> str:
     """
     Reschedules an existing appointment to a new date and time.
     """
+    if not appointment_id:
+        user_appts = [a for a in db_appointments.values() if a.session_id == session_id and a.status != "canceled"]
+        if not user_appts:
+            return "Error: No active appointments found to reschedule."
+        appointment_id = user_appts[-1].id
+
     if appointment_id not in db_appointments:
         return f"Error: Appointment {appointment_id} not found."
         
